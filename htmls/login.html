@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh">
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/hydroON.ico') }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>login</title>
+    <style>
+        /* 添加一些基本的样式 */
+        .password-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .password-input {
+            padding-right: 30px;
+            /* 为图标留出空间 */
+        }
+
+        .toggle-icon {
+            margin-left: -25px;
+            /* 将图标放在输入框内部 */
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>填写个人信息</h2>
+        <form action="/" method="POST">
+            <div class="form-group">
+                <label for="username"></label>
+
+                <input class="el-input__inner" maxlength="39" name="username" type="text" autocomplete="username"
+                    tabindex="0" placeholder="手机号/邮箱" id="username" required>
+
+            </div>
+            <div class="form-group">
+                <label for="password"></label>
+                <div class="password-container">
+
+                    <input class="el-input__inner password-input" maxlength="30" name="password" type="password"
+                        autocomplete="current-password" tabindex="0" placeholder="密码" id="password" required>
+
+                    <span class="toggle-icon" onclick="togglePasswordVisibility()">
+                        <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
+                            role="presentation" focusable="false">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M4 5.25a.75.75 0 01.75.75c0 2.72 2.272 4.75 5.25 4.75S15.25 8.72 15.25 6a.75.75 0 011.5 0c0 1.205-.33 2.288-.9 3.2l1.6 1.2a.75.75 0 11-.9 1.2l-1.648-1.236a6.655 6.655 0 01-2.19 1.384l.959 1.917a.75.75 0 01-1.342.67l-1-2a.75.75 0 01-.065-.19 7.665 7.665 0 01-2.528 0 .753.753 0 01-.065.19l-1 2a.75.75 0 01-1.342-.67l.958-1.917a6.652 6.652 0 01-2.206-1.4l-1.897 1.275a.75.75 0 11-.836-1.246l1.787-1.2A5.984 5.984 0 013.25 6 .75.75 0 014 5.25z"
+                                fill="rgb(193, 194, 199)"></path>
+                        </svg>
+                    </span>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="登录">
+            </div>
+        </form>
+        <p style="font-size: 12px; color: rgb(130, 125, 125);">信息仅用于后期联系</p>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.toggle-icon svg path');
+            const isPasswordHidden = passwordInput.type === 'password';
+
+            // 切换密码输入框的类型
+            passwordInput.type = isPasswordHidden ? 'text' : 'password';
+
+            // 切换图标
+            if (isPasswordHidden) {
+                toggleIcon.setAttribute('d', 'M16.5 10c0 1.187-.594 2.269-1.73 3.103-1.153.846-2.83 1.397-4.77 1.397-1.94 0-3.617-.551-4.77-1.397C4.095 12.27 3.5 11.187 3.5 10c0-1.187.594-2.269 1.73-3.103C6.384 6.05 8.06 5.5 10 5.5c1.94 0 3.617.551 4.77 1.397C15.905 7.73 16.5 8.813 16.5 10zm1.5 0c0 3.5-3.582 6-8 6s-8-2.5-8-6 3.582-6 8-6 8 2.5 8 6zm-6.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm1.5 0a3 3 0 11-6 0 3 3 0 016 0z');
+            } else {
+                toggleIcon.setAttribute('d', 'M4 5.25a.75.75 0 01.75.75c0 2.72 2.272 4.75 5.25 4.75S15.25 8.72 15.25 6a.75.75 0 011.5 0c0 1.205-.33 2.288-.9 3.2l1.6 1.2a.75.75 0 11-.9 1.2l-1.648-1.236a6.655 6.655 0 01-2.19 1.384l.959 1.917a.75.75 0 01-1.342.67l-1-2a.75.75 0 01-.065-.19 7.665 7.665 0 01-2.528 0 .753.753 0 01-.065.19l-1 2a.75.75 0 01-1.342-.67l.958-1.917a6.652 6.652 0 01-2.206-1.4l-1.897 1.275a.75.75 0 11-.836-1.246l1.787-1.2A5.984 5.984 0 013.25 6 .75.75 0 014 5.25z');
+            }
+        }
+    </script>
+
+    <style>
+        /* 可选：添加样式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 300px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input.el-input__inner {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        input.el-input__inner:focus,
+        input.el-input__inner:hover {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid rgb(211, 188, 142);
+            border-radius: 4px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .toggle-icon {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            padding-right: 10px;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #d0c04d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #d0c04d;
+        }
+    </style>
+</body>
+
+</html>

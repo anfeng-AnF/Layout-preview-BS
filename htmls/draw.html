@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas 多图操作（拖动, 缩放, 旋转）</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    canvas {
+      border: 1px solid black;
+      width: 100%;
+      max-width: 500px;
+      /* 限制 Canvas 最大宽度 */
+      height: auto;
+      margin-bottom: 20px;
+    }
+
+    .image-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      padding: 10px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .image-item {
+      cursor: pointer;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 5px;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .image-item:hover {
+      transform: scale(1.1);
+    }
+
+    .image-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .image-item {
+        width: 60px;
+        height: 60px;
+      }
+
+      canvas {
+        max-width: 90%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 10px;
+      }
+
+      .image-list {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .image-item {
+        margin-bottom: 10px;
+      }
+    }
+
+    .navbar {
+      background-color: #333;
+      padding: 10px 20px;
+    }
+
+    /* 菜单项样式 */
+    .menu-item {
+      display: inline-block;
+      position: relative;
+      /* 使下拉菜单相对于菜单项定位 */
+      padding: 10px 20px;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* 下拉菜单样式，默认隐藏 */
+    .dropdown {
+      display: none;
+      /* 默认隐藏下拉菜单 */
+      position: absolute;
+      top: 100%;
+      /* 将下拉菜单定位到菜单项下方 */
+      left: 0;
+      /* 从菜单项最左边开始 */
+      background-color: white;
+      border: 2px solid rgb(211, 188, 142);
+      padding: 10px;
+      z-index: 1;
+      max-height: 80vh;
+      max-width: 80vh;
+      /* 设置最大高度为视口高度的80% */
+      overflow-y: auto;
+      /* 内容超出时启用垂直滚动条 */
+      width: auto;
+      /* 宽度自适应 */
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 下拉菜单项的样式 */
+    .dropdown ul {
+      list-style-type: none;
+      /* 去除默认列表样式 */
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      /* 默认每行显示 3 个项目 */
+      grid-gap: 10px;
+      /* 设置网格项之间的间距 */
+      max-width: 500px;
+      /* 限制最大宽度，防止超出屏幕 */
+      width: auto;
+      /* 让宽度自适应 */
+      min-width: 300px;
+      /* 设置最小宽度 */
+    }
+
+    .dropdown ul li {
+      padding: 5px 8px;
+    }
+
+    .dropdown ul li a {
+      text-decoration: none;
+      color: black;
+      display: block;
+    }
+
+    .dropdown ul li a:hover {
+      background-color: #ddd;
+    }
+
+    /* 鼠标悬停时显示下拉菜单 */
+    .menu-item:hover .dropdown {
+      display: block;
+    }
+
+    .dropdown img {
+      margin-bottom: 5px;
+      width: 40px;
+      /* 图片宽度 */
+      height: 40px;
+      /* 图片高度 */
+      object-fit: cover;
+      /* 保持图片比例，裁剪超出部分 */
+    }
+
+    ul {
+      list-style-type: none;
+      /* 去除默认圆点 */
+      padding-left: 0;
+      display: flex;
+      /* 使用 flexbox 布局 */
+      justify-content: space-around;
+      /* 列表项之间均匀分布 */
+    }
+
+    li {
+      margin: 0 4px;
+      /* 为每个列表项设置间距 */
+    }
+
+    .canvas-container {
+      width: auto;
+      height: auto;
+      margin: 50px auto;
+      /* 居中显示 */
+      padding: 20px;
+      border: 2px solid #ccc;
+      /* 添加边框 */
+      border-radius: 10px;
+      /* 圆角边框 */
+      background: #f0f0f0;
+      /* 设置背景色 */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      /* 添加阴影效果 */
+      display: flex;
+      justify-content: center;
+      /* 居中显示 Canvas */
+      align-items: center;
+      flex-direction: column;
+      /* 让内容竖着排列 */
+    }
+
+    canvas {
+      border: 1px solid #333;
+      /* Canvas 边框 */
+      background-color: #fff;
+      /* Canvas 背景色 */
+      display: block;
+      /* 取消 canvas 默认的行内显示 */
+      border-radius: 8px;
+      /* Canvas 圆角 */
+    }
+
+
+    /* 设置 ul 样式 */
+    ul.option-list {
+      list-style-type: none;
+      /* 去除默认的点 */
+      padding: 0px;
+      /* 去除内边距 */
+      margin: 4px;
+      /* 去除外边距 */
+    }
+
+    /* 设置 li 样式 */
+    ul.option-list li {
+      padding: 10px 20px;
+      /* 内边距 */
+      margin: 5px 5px;
+      /* 外边距 */
+      background-color: #f4f4f4;
+      /* 背景颜色 */
+      border: 1px solid #ddd;
+      /* 边框 */
+      border-radius: 5px;
+      /* 圆角 */
+      cursor: pointer;
+      /* 鼠标悬停时变为指针 */
+      transition: background-color 0.3s;
+      /* 添加过渡效果 */
+    }
+
+    /* 鼠标悬停时改变背景色 */
+    ul.option-list li:hover {
+      background-color: #e0e0e0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    {% for category, images in category_images.items() %}
+    <div class="menu-item">
+      {{ category }}
+      <!-- 下拉菜单 -->
+      <div class="dropdown">
+        <ul>
+          {% for image in images %}
+          <li>
+            <a href="#" onclick="selectImage('{{ url_for('static', filename='images/' + category + '/' + image) }}')">
+              <img src="{{ url_for('static', filename='images/' + category + '/' + image) }}" alt="{{ image }}">
+              <!-- {{ image }} -->
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="canvas-container">
+    预览
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+    <div>
+      <ul class="option-list">
+        <ul>
+          <li><a href="#" onclick="setMode(optionStatus.ROTATE)">旋转</a></li>
+          <li><a href="#" onclick="setMode(optionStatus.MOVE)">移动</a></li>
+          <li><a href="#" onclick="setMode(optionStatus.DELETE)">删除选择项</a></li>
+          <li><a href="#" onclick="setMode(optionStatus.CLEAR)">全部清空</a></li>
+      </ul>
+      </ul>
+      <ul class="option-list">
+        <li>保存</li>
+        <li>下载</li>
+      </ul>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/draw.js') }}"></script>
+  <script>
+  </script>
+</body>
+
+</html>
