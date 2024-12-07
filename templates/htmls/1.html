@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas 多图操作（拖动, 缩放, 旋转）</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    canvas {
+      border: 1px solid black;
+      width: 100%;
+      max-width: 500px;
+      /* 限制 Canvas 最大宽度 */
+      height: auto;
+      margin-bottom: 20px;
+    }
+
+    .image-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      padding: 10px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .image-item {
+      cursor: pointer;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 5px;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .image-item:hover {
+      transform: scale(1.1);
+    }
+
+    .image-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    @media (max-width: 600px) {
+      .image-item {
+        width: 60px;
+        height: 60px;
+      }
+
+      canvas {
+        max-width: 90%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 10px;
+      }
+
+      .image-list {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .image-item {
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="image-list">
+      <div class="image-item" onclick="selectImage('/resources/anemo.png')">
+        <img src="/resources/anemo.png" alt="Anemo">
+      </div>
+      <div class="image-item" onclick="selectImage('/resources/anemoON.png')">
+        <img src="/resources/anemoON.png" alt="AnemoON">
+      </div>
+      <div class="image-item" onclick="selectImage('/resources/cryo.png')">
+        <img src="/resources/cryo.png" alt="Cryo">
+      </div>
+      <div class="image-item" onclick="selectImage('/resources/cryoON.ico')">
+        <img src="/resources/cryoON.png" alt="CryoON">
+      </div>
+      <div class="image-item" onclick="selectImage('/resources/dendro.png')">
+        <img src="/resources/dendro.png" alt="Dendro">
+      </div>
+    </div>
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    const selectedImages = [];
+    let isDragging = false;
+    let currentImageIndex = -1;
+    let startX, startY, offsetX, offsetY, startAngle, scaleFactor = 1;
+    let startDist = 0, startAngleForRotation = 0;
+    let selectedElement = null;
+
+    // 定义图像元素
+    class ImageElement {
+      constructor(src, x, y, width, height, angle = 0) {
+        this.src = src;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.angle = angle; // 旋转角度
+        this.image = new Image();
+        this.image.src = src;
+        this.image.onload = () => {
+          this.draw();
+        };
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        ctx.rotate(this.angle * Math.PI / 180);
+        ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+        ctx.restore();
+      }
+
+      isPointInside(x, y) {
+        const dx = x - (this.x + this.width / 2);
+        const dy = y - (this.y + this.height / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < this.width / 2;
+      }
+    }
+
+    // 选择图像
+    function selectImage(src) {
+      const image = new ImageElement(src, 100, 100, 100, 100);
+      selectedImages.push(image);
+      drawImages();
+    }
+
+    // 绘制所有图像和选中元素的矩形框
+    function drawImages() {
+      // 清除画布
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制每个图像
+      for (let i = 0; i < selectedImages.length; i++) {
+        const img = selectedImages[i];
+        ctx.drawImage(img.image, img.x, img.y, img.width, img.height);
+
+        // 如果该图像被选中，绘制矩形框
+        if (selectedElement === img) {
+          ctx.strokeStyle = '#FF0000'; // 红色矩形框
+          ctx.lineWidth = 3;
+          ctx.strokeRect(img.x - 5, img.y - 5, img.width + 10, img.height + 10); // 矩形框加5像素的边距
+        }
+      }
+    }
+
+
+
+    // 触摸开始事件
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) { // 单点触摸，进行拖动
+        const touchX = e.touches[0].clientX - canvas.offsetLeft;
+        const touchY = e.touches[0].clientY - canvas.offsetTop;
+
+        // 遍历所有已选择的图像
+        for (let i = 0; i < selectedImages.length; i++) {
+          // 判断触摸点是否在图像内
+          if (selectedImages[i].isPointInside(touchX, touchY)) {
+            isDragging = true;  // 设置为拖动状态
+            currentImageIndex = i;  // 记录当前正在拖动的图像
+
+            // 记录触摸点相对于图像的偏移量
+            startX = touchX;  // 当前触摸点的x位置
+            startY = touchY;  // 当前触摸点的y位置
+            offsetX = selectedImages[i].x;
+            offsetY = selectedImages[i].y;
+            selectedElement = selectedImages[i]; // 选中该图像
+
+            break;  // 找到第一个符合条件的图像后就不再继续遍历
+          }
+        }
+      } else if (e.touches.length === 2) { // 双点触摸，进行旋转
+        // 记录两点之间的初始距离和角度
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        startDist = Math.sqrt(dx * dx + dy * dy); // 起始两点之间的距离
+        startAngle = Math.atan2(dy, dx) * (180 / Math.PI); // 起始角度
+
+        // 如果图像在双触摸区域内，准备旋转
+        for (let i = 0; i < selectedImages.length; i++) {
+          const touchX = e.touches[0].clientX - canvas.offsetLeft;
+          const touchY = e.touches[0].clientY - canvas.offsetTop;
+          if (selectedImages[i].isPointInside(touchX, touchY)) {
+            currentImageIndex = i;
+            break;
+          }
+        }
+      }
+    });
+
+    // 触摸移动事件
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault(); // 防止页面滚动
+      if (isDragging && currentImageIndex !== -1 && e.touches.length === 1) {
+        // 当前触摸点的坐标
+        const touchX = e.touches[0].clientX - canvas.offsetLeft;
+        const touchY = e.touches[0].clientY - canvas.offsetTop;
+
+        // 计算相对于起始位置的偏移量
+        const dx = touchX - startX; // 当前触摸点与起始触摸点的x轴偏移量
+        const dy = touchY - startY; // 当前触摸点与起始触摸点的y轴偏移量
+
+        // 更新图像的位置
+        selectedImages[currentImageIndex].x = offsetX + dx;
+        selectedImages[currentImageIndex].y = offsetY + dy;
+
+        // 重新绘制所有图像
+        drawImages();
+      } else if (e.touches.length === 2) { // 双点触摸，进行旋转
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const currentDist = Math.sqrt(dx * dx + dy * dy); // 当前两点之间的距离
+        const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI); // 当前角度
+
+        // 计算角度变化
+        const angleChange = currentAngle - startAngle;
+
+        // 更新图像的旋转角度
+        if (currentImageIndex !== -1) {
+          selectedImages[currentImageIndex].angle += angleChange;
+        }
+
+        // 更新起始角度和距离
+        startDist = currentDist;
+        startAngle = currentAngle;
+
+        // 重新绘制所有图像
+        drawImages();
+      }
+    });
+
+    // 鼠标按下事件
+    canvas.addEventListener('mousedown', (e) => {
+      const mouseX = e.clientX - canvas.offsetLeft;
+      const mouseY = e.clientY - canvas.offsetTop;
+
+      // 遍历所有已选择的图像
+      for (let i = 0; i < selectedImages.length; i++) {
+        // 判断鼠标是否在图像内
+        if (selectedImages[i].isPointInside(mouseX, mouseY)) {
+          isDragging = true;  // 设置为拖动状态
+          currentImageIndex = i;  // 记录当前正在拖动的图像
+
+          // 记录鼠标相对于图像的偏移量
+          startX = mouseX;
+          startY = mouseY;
+          offsetX = selectedImages[i].x;
+          offsetY = selectedImages[i].y;
+          selectedElement = selectedImages[i]; // 选中该图像
+          break;
+        }
+      }
+    });
+
+    // 鼠标移动事件
+    canvas.addEventListener('mousemove', (e) => {
+      if (isDragging && currentImageIndex !== -1) {
+        const mouseX = e.clientX - canvas.offsetLeft;
+        const mouseY = e.clientY - canvas.offsetTop;
+
+        // 计算相对于起始位置的偏移量
+        const dx = mouseX - startX;  // 当前鼠标与起始位置的x轴偏移量
+        const dy = mouseY - startY;  // 当前鼠标与起始位置的y轴偏移量
+
+        // 更新图像的位置
+        selectedImages[currentImageIndex].x = offsetX + dx;
+        selectedImages[currentImageIndex].y = offsetY + dy;
+
+        // 重新绘制所有图像
+        drawImages();
+      }
+    });
+
+    // 鼠标释放事件
+    canvas.addEventListener('mouseup', (e) => {
+      isDragging = false;  // 停止拖动
+      currentImageIndex = -1;  // 重置当前图像索引
+    });
+
+    // 鼠标离开事件，防止鼠标离开 canvas 时继续拖动
+    canvas.addEventListener('mouseleave', (e) => {
+      isDragging = false;  // 停止拖动
+      currentImageIndex = -1;  // 重置当前图像索引
+    });
+
+    // 触摸结束事件
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        isDragging = false;  // 停止拖动
+        currentImageIndex = -1;  // 重置当前图像索引
+      } else if (e.touches.length === 1) { // 双点触摸已结束，转为单点触摸
+        startDist = 0;
+        startAngle = 0;
+      }
+    });
+
+
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        isDragging = false;
+        currentImageIndex = -1;
+      }
+    });
+  </script>
+
+</body>
+
+</html>
