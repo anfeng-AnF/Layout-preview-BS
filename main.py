@@ -162,7 +162,37 @@ def serve_image(filename):
     safe_filename = os.path.basename(filename)
     return send_from_directory(RESOURCES_FOLDER, safe_filename)
 
+@app.route('/save-image', methods=['POST'])
+def save_image():
+    # 获取前端发送的数据
+    data = request.get_json()
+    canvas_width = data['canvasWidth']
+    canvas_height = data['canvasHeight']
+    elements_data = data['elements']
+
+    # 假设每个用户只能上传一张图像，获取当前用户信息
+    user = User.query.first()  # 这里可以根据当前登录用户获取
+
+    # 创建图像记录
+    image = Image(width=canvas_width, height=canvas_height, user_id=user.id)
+    db.session.add(image)
+    db.session.commit()  # 提交，确保获取到 image.id
+
+    # 保存图像元素
+    for element in elements_data:
+        image_element = ImageElement(
+            image_id=image.id,  # 关联到该图像
+            file_name=element['src'],  # 图像文件名
+            position_x=element['x'],  # 图像元素的x坐标
+            position_y=element['y'],  # 图像元素的y坐标
+            rotation=element['angle']  # 图像元素的旋转角度
+        )
+        db.session.add(image_element)
+
+    db.session.commit()  # 提交图像元素
+
+    return jsonify({'message': '保存成功'})
 
 if __name__ == '__main__':
     # 设置为 0.0.0.0 来监听所有可用的 IPv4 地址，端口指定为 9986
-    app.run(host='0.0.0.0', port=9986, debug=True)
+    app.run(host='0.0.0.0',port=80, debug=True)

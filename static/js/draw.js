@@ -1,8 +1,10 @@
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
-const selectedImages = [];
+const drawableElements = [];
 let isDragging = false;
-let currentImageIndex = -1;
+let currentElementIndex = -1;
+let currentImage=null;
+let images=[]
 
 let startX,
     startY,
@@ -24,6 +26,95 @@ const optionStatus = Object.freeze({
 });
 
 let currentStatus = optionStatus.MOVE;
+
+window.onload = function() {
+    console.log("页面加载完成");
+
+    // 从本地存储加载画布数据
+    loadCanvasData();
+    canvas.width = 1280;
+    canvas.height = 720;
+
+    // 重新绘制 Canvas 内容（可以根据需求添加绘制逻辑）
+    drawImages();
+    // 执行其他初始化操作，例如：初始化画布、绑定事件等
+    initializeCanvas();
+};
+
+function loadCanvasData() {
+    const savedData = JSON.parse(localStorage.getItem('canvasData') || '[]');
+    if (savedData.length > 0) {
+        savedData.forEach(data => {
+            const element = new ImageElement(data.src, data.x, data.y, data.width, data.height, data.rotation);
+            myImage.addElement(element);  // 假设myImage是已经创建的Image实例
+        });
+    }
+}
+
+function initializeCanvas() {
+    // 执行画布初始化操作，比如创建Canvas实例，初始化默认大小等
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    // 执行其他需要的初始化任务
+}
+
+
+window.onbeforeunload = function(e) {
+    // 提示用户确认离开页面
+    const confirmationMessage = "您有未保存的内容，确定要离开吗？";
+    (e || window.event).returnValue = confirmationMessage; // 适用于不同浏览器
+    return confirmationMessage; // 适用于某些浏览器
+
+    // 保存画布数据到本地存储或服务器
+    saveImage();
+};
+
+// class Image {
+//     constructor(canvasId, width, height) {
+//         // 初始化画布的属性
+//         this.canvasId = canvasId; // 唯一标识这个 canvas
+//         this.width = width;
+//         this.height = height;
+//         this.elements = [];  // 存储图像元素（比如图片、图标、图形等）
+//         // this.canvas = document.getElementById(canvasId);  // 获取 canvas 元素
+//         // this.ctx = this.canvas.getContext('2d'); // 获取 canvas 的 2d 绘图上下文
+
+//         // 设置画布大小
+//         this.canvas.width = this.width;
+//         this.canvas.height = this.height;
+//     }
+
+//     // 添加元素到画布
+//     addElement(element) {
+//         this.elements.push(element);  // 将新的图像元素加入到元素列表中
+//         this.draw();  // 更新绘制
+//     }
+
+//     // 绘制画布中的所有元素
+//     draw() {
+//         this.ctx.clearRect(0, 0, this.width, this.height); // 清空画布
+
+//         // 遍历所有元素并绘制
+//         this.elements.forEach((element) => {
+//             element.draw(this.ctx);  // 绘制每个元素
+//         });
+//     }
+
+//     // 删除指定元素
+//     removeElement(element) {
+//         const index = this.elements.indexOf(element);
+//         if (index !== -1) {
+//             this.elements.splice(index, 1);  // 移除该元素
+//             this.draw();  // 更新绘制
+//         }
+//     }
+
+//     // 获取所有元素
+//     getElements() {
+//         return this.elements;
+//     }
+// }
+
 
 // 定义图像元素
 class ImageElement {
@@ -72,7 +163,7 @@ function setMode(mode) {
         case optionStatus.CLEAR:
             let result = confirm("全部清空？");
             if (result) {
-                selectedImages.length = 0;
+                drawableElements.length = 0;
                 selectedElement = null;
                 drawImages();
             }
@@ -84,17 +175,31 @@ function setMode(mode) {
 
 function deleteElement() {
     if (selectedElement) {
-        selectedImages.splice(selectedImages.indexOf(selectedElement),1);
-        selectedElement=null;
+        drawableElements.splice(drawableElements.indexOf(selectedElement), 1);
+        selectedElement = null;
         drawImages();
     }
 }
 
 // 选择图像
 function selectImage(src) {
-    const image = new ImageElement(src, 100, 100, 100, 100);
-    selectedImages.push(image);
-    drawImages();
+    const img = new Image();
+    img.src = src;
+    img.onload = function() {
+        // 获取图像的实际宽度和高度
+        const imageWidth = img.width;
+        const imageHeight = img.height;
+
+        // 创建 ImageElement 对象（可以根据实际需要修改参数）
+        const image = new ImageElement(src, 100, 100, imageWidth, imageHeight);  // 使用实际的宽高
+        drawableElements.push(image);
+
+        // 绘制所有选中的图像
+        drawImages();
+    };
+    img.onerror = function() {
+        console.error('图片加载失败:', src);
+    };
 }
 
 // 绘制所有图像和选中元素的矩形框
@@ -103,9 +208,10 @@ function drawImages() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 绘制每个图像
-    for (let i = 0; i < selectedImages.length; i++) {
-        const img = selectedImages[i];
-        ctx.drawImage(img.image, img.x, img.y, img.width, img.height);
+    for (let i = 0; i < drawableElements.length; i++) {
+        const img = drawableElements[i];
+        img.draw();
+
 
         // 如果该图像被选中，绘制矩形框
         if (selectedElement === img) {
@@ -121,55 +227,33 @@ function drawImages() {
 canvas.addEventListener('touchstart', (e) => {
     // 获取 canvas 的边界信息
     const rect = canvas.getBoundingClientRect();
-    const xfactor = canvas.width/(rect.right-rect.left);
-    const yfactor = canvas.height/(rect.bottom-rect.top);
+    const xfactor = canvas.width / (rect.right - rect.left);
+    const yfactor = canvas.height / (rect.bottom - rect.top);
 
-    if (e.touches.length === 1) {
-        // 单点触摸，进行拖动
-        // 获取触摸点相对于 canvas 的位置
-        const touchX =(e.touches[0].clientX - rect.left)*xfactor;
-        const touchY =(e.touches[0].clientY - rect.top)*yfactor;
 
-        // 调试点
-        drawDebugPoint(touchX, touchY);
+    // 单点触摸，进行拖动
+    // 获取触摸点相对于 canvas 的位置
+    const touchX = (e.touches[0].clientX - rect.left) * xfactor;
+    const touchY = (e.touches[0].clientY - rect.top) * yfactor;
 
-        // 遍历所有已选择的图像
-        for (let i = 0; i < selectedImages.length; i++) {
-            // 判断触摸点是否在图像内
-            if (selectedImages[i].isPointInside(touchX, touchY)) {
-                isDragging = true; // 设置为拖动状态
-                currentImageIndex = i; // 记录当前正在拖动的图像
+    // 遍历所有已选择的图像
+    for (let i = 0; i < drawableElements.length; i++) {
+        // 判断触摸点是否在图像内
+        if (drawableElements[i].isPointInside(touchX, touchY)) {
+            isDragging = true; // 设置为拖动状态
+            currentElementIndex = i; // 记录当前正在拖动的图像
 
-                // 记录触摸点相对于图像的偏移量
-                startX = e.touches[0].clientX; // 当前触摸点的x位置
-                startY = e.touches[0].clientY; // 当前触摸点的y位置
-                offsetX = selectedImages[i].x;
-                offsetY = selectedImages[i].y;
-                selectedElement = selectedImages[i]; // 选中该图像
-
-                break; // 找到第一个符合条件的图像后就不再继续遍历
-            }
+            // 记录触摸点相对于图像的偏移量
+            startX = e.touches[0].clientX; // 当前触摸点的x位置
+            startY = e.touches[0].clientY; // 当前触摸点的y位置
+            offsetX = drawableElements[i].x;
+            offsetY = drawableElements[i].y;
+            selectedElement = drawableElements[i]; // 选中该图像
+            drawImages();
+            break; // 找到第一个符合条件的图像后就不再继续遍历
         }
     }
 
-    else if (e.touches.length === 2) {
-        // 双点触摸，进行旋转
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        startDist = Math.sqrt(dx * dx + dy * dy); // 起始两点之间的距离
-        startAngle = Math.atan2(dy, dx) * (180 / Math.PI); // 起始角度
-
-        // 如果图像在双触摸区域内，准备旋转
-        for (let i = 0; i < selectedImages.length; i++) {
-            const touchX = e.touches[0].clientX - rect.left;
-            const touchY = e.touches[0].clientY - rect.top;
-
-            if (selectedImages[i].isPointInside(touchX, touchY)) {
-                currentImageIndex = i;
-                break;
-            }
-        }
-    }
 });
 
 // 触摸移动事件
@@ -177,90 +261,164 @@ canvas.addEventListener('touchmove', (e) => {
     e.preventDefault(); // 防止页面滚动
 
     const rect = canvas.getBoundingClientRect();
-    const xfactor = canvas.width/(rect.right-rect.left);
-    const yfactor = canvas.height/(rect.bottom-rect.top);
+    const xfactor = canvas.width / (rect.right - rect.left);
+    const yfactor = canvas.height / (rect.bottom - rect.top);
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
 
-    if (isDragging && currentImageIndex !== -1 && e.touches.length === 1) {
-        // 当前触摸点的坐标
-        const touchX =(e.touches[0].clientX - rect.left)*xfactor;
-        const touchY =(e.touches[0].clientY - rect.top)*yfactor;
+    // 当前触摸点的坐标（考虑到缩放因子）
+    const touchX = (e.touches[0].clientX - rect.left) * xfactor;
+    const touchY = (e.touches[0].clientY - rect.top) * yfactor;
+    if (currentStatus == optionStatus.MOVE) {
 
         // 计算相对于起始位置的偏移量
-        const dx = e.touches[0].clientX - startX; // 当前触摸点与起始触摸点的x轴偏移量
-        const dy = e.touches[0].clientY - startY; // 当前触摸点与起始触摸点的y轴偏移量
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
 
         // 更新图像的位置
-        selectedImages[currentImageIndex].x = offsetX + dx*xfactor;
-        selectedImages[currentImageIndex].y = offsetY + dy*yfactor;
+        drawableElements[currentElementIndex].x = offsetX + dx * xfactor;
+        drawableElements[currentElementIndex].y = offsetY + dy * yfactor;
 
-        // 重新绘制所有图像
-        drawImages();
-    }
+        // 图像的宽度和高度
+        const imageWidth = drawableElements[currentElementIndex].width || 100; // 默认 100 像素
+        const imageHeight = drawableElements[currentElementIndex].height || 100; // 默认 100 像素
 
-    else if (e.touches.length === 2) {
-        // 双点触摸，进行旋转
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const currentDist = Math.sqrt(dx * dx + dy * dy); // 当前两点之间的距离
-        const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI); // 当前角度
-
-        // 计算角度变化
-        const angleChange = currentAngle - startAngle;
-
-        // 更新图像的旋转角度
-        if (currentImageIndex !== -1) {
-            selectedImages[currentImageIndex].angle += angleChange;
+        // 检查图像是否超出 Canvas 边界
+        if (drawableElements[currentElementIndex].x < 0) {
+            drawableElements[currentElementIndex].x = 0; // 防止超出左边界
+        } else if (drawableElements[currentElementIndex].x + imageWidth > canvasWidth) {
+            drawableElements[currentElementIndex].x = canvasWidth - imageWidth; // 防止超出右边界
         }
 
-        // 更新起始角度和距离
-        startDist = currentDist;
-        startAngle = currentAngle;
+        if (drawableElements[currentElementIndex].y < 0) {
+            drawableElements[currentElementIndex].y = 0; // 防止超出上边界
+        } else if (drawableElements[currentElementIndex].y + imageHeight > canvasHeight) {
+            drawableElements[currentElementIndex].y = canvasHeight - imageHeight; // 防止超出下边界
+        }
 
         // 重新绘制所有图像
         drawImages();
     }
+    else if (currentStatus == optionStatus.ROTATE) {
+
+        const imageCenterX = drawableElements[currentElementIndex].x + drawableElements[currentElementIndex].width / 2;
+        const imageCenterY = drawableElements[currentElementIndex].y + drawableElements[currentElementIndex].height / 2;
+
+        const beginAngle = { x: startX - imageCenterX, y: startY - imageCenterY };
+        const currentAngle = { x: touchX - imageCenterX, y: touchY - imageCenterY };
+
+        drawableElements[currentElementIndex].angle = calculateAngleWithSign(beginAngle, currentAngle) * 180 / Math.PI;
+        drawImages();
+    }
+
+
 });
 
 // 鼠标按下事件
 canvas.addEventListener('mousedown', (e) => {
-    const mouseX = e.clientX - canvas.offsetLeft;
-    const mouseY = e.clientY - canvas.offsetTop;
 
+    const rect = canvas.getBoundingClientRect();
+    const xfactor = canvas.width / (rect.right - rect.left);
+    const yfactor = canvas.height / (rect.bottom - rect.top);
+    const mouseX = (e.clientX - rect.left) * xfactor;
+    const mouseY = (e.clientY - rect.top) * yfactor;
     // 遍历所有已选择的图像
-    for (let i = 0; i < selectedImages.length; i++) {
+    for (let i = 0; i < drawableElements.length; i++) {
 
         // 判断鼠标是否在图像内
-        if (selectedImages[i].isPointInside(mouseX, mouseY)) {
+        if (drawableElements[i].isPointInside(mouseX, mouseY)) {
             isDragging = true; // 设置为拖动状态
-            currentImageIndex = i; // 记录当前正在拖动的图像
+            currentElementIndex = i; // 记录当前正在拖动的图像
 
             // 记录鼠标相对于图像的偏移量
             startX = mouseX;
             startY = mouseY;
-            offsetX = selectedImages[i].x;
-            offsetY = selectedImages[i].y;
-            selectedElement = selectedImages[i]; // 选中该图像
+            offsetX = drawableElements[i].x;
+            offsetY = drawableElements[i].y;
+            selectedElement = drawableElements[i]; // 选中该图像
+
+            drawImages();
             break;
         }
     }
-    drawDebugPoint(startX, startY);
+    //drawDebugPoint(startX, startY);
 });
+
+function calculateAngleWithSign(a, b) {
+    // 向量 a 和 b 的分量
+    const ax = a.x, ay = a.y;
+    const bx = b.x, by = b.y;
+
+    // 计算点积：a·b = ax * bx + ay * by
+    const dotProduct = ax * bx + ay * by;
+
+    // 计算向量 a 和 b 的模
+    const magnitudeA = Math.sqrt(ax * ax + ay * ay);
+    const magnitudeB = Math.sqrt(bx * bx + by * by);
+
+    // 计算夹角的余弦值
+    const cosTheta = dotProduct / (magnitudeA * magnitudeB);
+
+    // 使用反余弦函数（arccos）计算夹角（单位：弧度）
+    let angle = Math.acos(cosTheta);
+
+    // 计算叉积来判断方向
+    const crossProduct = ax * by - ay * bx;
+
+    // 如果叉积为负，说明夹角是顺时针的，我们需要将角度取负
+    if (crossProduct < 0) {
+        angle = -angle;  // 夹角为负，逆时针为正，顺时针为负
+    }
+    console.log(angle);
+    return angle;  // 返回夹角（弧度）
+}
 
 // 鼠标移动事件
 canvas.addEventListener('mousemove', (e) => {
-    if (isDragging && currentImageIndex !== -1) {
-        const mouseX = e.clientX - canvas.offsetLeft;
-        const mouseY = e.clientY - canvas.offsetTop;
-
+    const rect = canvas.getBoundingClientRect();
+    const xfactor = canvas.width / (rect.right - rect.left);
+    const yfactor = canvas.height / (rect.bottom - rect.top);
+    const mouseX = (e.clientX - rect.left) * xfactor;
+    const mouseY = (e.clientY - rect.top) * yfactor;
+    if (currentStatus == optionStatus.MOVE && currentElementIndex !== -1) {
         // 计算相对于起始位置的偏移量
         const dx = mouseX - startX; // 当前鼠标与起始位置的x轴偏移量
         const dy = mouseY - startY; // 当前鼠标与起始位置的y轴偏移量
 
-        // 更新图像的位置
-        selectedImages[currentImageIndex].x = offsetX + dx;
-        selectedImages[currentImageIndex].y = offsetY + dy;
+        const imageWidth = drawableElements[currentElementIndex].width || 100; // 图像宽度，默认100
+        const imageHeight = drawableElements[currentElementIndex].height || 100; // 图像高度，默认100
 
+        // 获取 Canvas 的尺寸
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        // 更新图像的位置
+        drawableElements[currentElementIndex].x = offsetX + dx;
+        drawableElements[currentElementIndex].y = offsetY + dy;
+
+        // 检查图像是否超出 Canvas 边界
+        if (drawableElements[currentElementIndex].x < 0) {
+            drawableElements[currentElementIndex].x = 0; // 如果超出左边界，将 x 设置为 0
+        } else if (drawableElements[currentElementIndex].x + imageWidth > canvasWidth) {
+            drawableElements[currentElementIndex].x = canvasWidth - imageWidth; // 如果超出右边界，将 x 设置为最大有效值
+        }
+
+        if (drawableElements[currentElementIndex].y < 0) {
+            drawableElements[currentElementIndex].y = 0; // 如果超出上边界，将 y 设置为 0
+        } else if (drawableElements[currentElementIndex].y + imageHeight > canvasHeight) {
+            drawableElements[currentElementIndex].y = canvasHeight - imageHeight; // 如果超出下边界，将 y 设置为最大有效值
+        }
         // 重新绘制所有图像
+        drawImages();
+    }
+    else if (currentStatus == optionStatus.ROTATE && currentElementIndex !== -1) {
+        const imageCenterX = drawableElements[currentElementIndex].x + drawableElements[currentElementIndex].width / 2;
+        const imageCenterY = drawableElements[currentElementIndex].y + drawableElements[currentElementIndex].height / 2;
+
+        const beginAngle = { x: startX - imageCenterX, y: startY - imageCenterY };
+        const currentAngle = { x: mouseX - imageCenterX, y: mouseY - imageCenterY };
+
+        drawableElements[currentElementIndex].angle = calculateAngleWithSign(beginAngle, currentAngle) * 180 / Math.PI;
         drawImages();
     }
 });
@@ -268,20 +426,20 @@ canvas.addEventListener('mousemove', (e) => {
 // 鼠标释放事件
 canvas.addEventListener('mouseup', (e) => {
     isDragging = false; // 停止拖动
-    currentImageIndex = -1; // 重置当前图像索引
+    currentElementIndex = -1; // 重置当前图像索引
 });
 
 // 鼠标离开事件，防止鼠标离开 canvas 时继续拖动
 canvas.addEventListener('mouseleave', (e) => {
     isDragging = false; // 停止拖动
-    currentImageIndex = -1; // 重置当前图像索引
+    currentElementIndex = -1; // 重置当前图像索引
 });
 
 // 触摸结束事件
 canvas.addEventListener('touchend', (e) => {
     if (e.touches.length === 0) {
         isDragging = false; // 停止拖动
-        currentImageIndex = -1; // 重置当前图像索引
+        currentElementIndex = -1; // 重置当前图像索引
     }
 
     else if (e.touches.length === 1) {
@@ -291,12 +449,71 @@ canvas.addEventListener('touchend', (e) => {
     }
 });
 
+function downloadImage() {
+    temp=selectedElement;
+    selectedElement=null;
+    drawImages();
+    // 获取 Canvas 的数据URL
+    const dataURL = canvas.toDataURL("image/png");
+    
+    // 创建一个临时的下载链接
+    const link = document.createElement('a');
+    link.href = dataURL;  // 数据URL作为链接的 href
+    link.download = 'canvas_image.png';  // 设置下载的文件名
+    
+    // 触发下载
+    link.click();
+    selectedElement=temp;
+    drawImages();
+}
+
+function saveImage() {
+    // 获取画布元素
+    const canvas = document.getElementById('myCanvas');
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    // 获取画布中所有图形元素的信息
+    const elementsData = drawableElements.map(image => {
+        return {
+            x: image.x,
+            y: image.y,
+            width: image.width,
+            height: image.height,
+            angle: image.angle, // 如果你有旋转信息
+            src: image.src  // 图片路径
+        };
+    });
+
+    // 组合要发送的数据
+    const data = {
+        canvasWidth: canvasWidth,
+        canvasHeight: canvasHeight,
+        elements: elementsData
+    };
+
+    // 发送 AJAX 请求到后端保存数据
+    fetch('/save-image', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data) // 将数据转换为 JSON 字符串
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('保存成功:', data);
+    })
+    .catch((error) => {
+        console.error('保存失败:', error);
+    });
+}
 
 
 canvas.addEventListener('touchend', (e) => {
     if (e.touches.length === 0) {
         isDragging = false;
-        currentImageIndex = -1;
+        currentElementIndex = -1;
     }
 });
 
@@ -306,4 +523,28 @@ function drawDebugPoint(x, y) {
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, 2 * Math.PI); // 绘制半径为 5 的圆形点
     ctx.fill();
+}
+
+const resolutions = {
+    "3840x2160": { width: 3840, height: 2160 },
+    "2560x1440": { width: 2560, height: 1440 },
+    "1920x1080": { width: 1920, height: 1080 },
+    "1280x720": { width: 1280, height: 720 },
+    "1366x768": { width: 1366, height: 768 },
+    "1024x768": { width: 1024, height: 768 },
+    "800x600": { width: 800, height: 600 },
+    "640x480": { width: 640, height: 480 },
+};
+
+function setCanvasResolution() {
+    // 获取选中的分辨率
+    const selectedResolution = document.getElementById('resolution').value;
+
+    // 根据选择的分辨率更新 Canvas 大小
+    const resolution = resolutions[selectedResolution];
+    canvas.width = resolution.width;
+    canvas.height = resolution.height;
+
+    // 重新绘制 Canvas 内容（可以根据需求添加绘制逻辑）
+    drawImages();
 }

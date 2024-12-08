@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/hydroON.ico') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -203,9 +203,9 @@
       /* 添加边框 */
       border-radius: 10px;
       /* 圆角边框 */
-      background: #f0f0f0;
+      background: #48a3e042;
       /* 设置背景色 */
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px #000000a6;
       /* 添加阴影效果 */
       display: flex;
       justify-content: center;
@@ -224,6 +224,7 @@
       /* 取消 canvas 默认的行内显示 */
       border-radius: 8px;
       /* Canvas 圆角 */
+      box-shadow: 0 4px 8px #000000a6;
     }
 
 
@@ -259,6 +260,130 @@
     ul.option-list li:hover {
       background-color: #e0e0e0;
     }
+
+    /* 画布分辨率选择框样式 */
+    .canvas-header {
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+    }
+
+    .canvas-header label {
+      font-size: 16px;
+      color: #555;
+    }
+
+    .canvas-header select {
+      padding: 8px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      background-color: #f9f9f9;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .canvas-header select:hover {
+      background-color: #f0f0f0;
+    }
+
+    /* 画布样式 */
+    canvas {
+      width: 100%;
+      max-width: 700px;
+      height: auto;
+      background-color: #fafafa;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+
+    .canvas-options {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .option-btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      margin: 0 10px;
+      /* 设置按钮之间的水平间距 */
+    }
+
+    .option-btn:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
+    }
+
+    .option-btn:active {
+      background-color: #003c73;
+      transform: scale(0.98);
+    }
+
+    /* Action buttons container */
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      /* Center the buttons horizontally */
+      gap: 20px;
+      /* Add space between buttons */
+      margin-top: 20px;
+      /* Add space above the buttons */
+    }
+
+    /* Individual button style */
+    .action-btn {
+      padding: 12px 20px;
+      /* Add padding inside the button */
+      font-size: 16px;
+      /* Set font size */
+      font-weight: bold;
+      /* Make the text bold */
+      background-color: #007bff;
+      /* Blue background */
+      color: white;
+      /* White text color */
+      border: none;
+      /* Remove border */
+      border-radius: 5px;
+      /* Round corners */
+      cursor: pointer;
+      /* Make the cursor a pointer */
+      transition: background-color 0.3s, transform 0.2s ease;
+      /* Add transition for hover and active states */
+    }
+
+    /* Hover effect for buttons */
+    .action-btn:hover {
+      background-color: #0056b3;
+      /* Darken the background on hover */
+      transform: scale(1.05);
+      /* Slightly enlarge the button */
+    }
+
+    /* Active state for buttons (when clicked) */
+    .action-btn:active {
+      background-color: #003d73;
+      /* Even darker when the button is pressed */
+      transform: scale(0.98);
+      /* Slightly shrink the button */
+    }
+
+    /* Focus state for accessibility */
+    .action-btn:focus {
+      outline: none;
+      /* Remove the default focus outline */
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
+      /* Add a custom focus ring */
+    }
   </style>
 </head>
 
@@ -284,22 +409,39 @@
     {% endfor %}
   </div>
   <div class="canvas-container">
-    预览
-    <canvas id="myCanvas" width="500" height="500"></canvas>
-    <div>
-      <ul class="option-list">
-        <ul>
-          <li><a href="#" onclick="setMode(optionStatus.ROTATE)">旋转</a></li>
-          <li><a href="#" onclick="setMode(optionStatus.MOVE)">移动</a></li>
-          <li><a href="#" onclick="setMode(optionStatus.DELETE)">删除选择项</a></li>
-          <li><a href="#" onclick="setMode(optionStatus.CLEAR)">全部清空</a></li>
-      </ul>
-      </ul>
-      <ul class="option-list">
-        <li>保存</li>
-        <li>下载</li>
-      </ul>
+    <!-- 画布分辨率选择部分 -->
+    <div class="canvas-header">
+      <label for="resolution">画布分辨率(像素): </label>
+      <select id="resolution" onchange="setCanvasResolution()">
+        <option value="3840x2160">3840x2160 (4K)</option>
+        <option value="2560x1440">2560x1440 (2K)</option>
+        <option value="1920x1080">1920x1080 (Full HD)</option>
+        <option value="1280x720" selected>1280x720 (HD)</option>
+        <option value="1366x768">1366x768</option>
+        <option value="1024x768">1024x768</option>
+        <option value="800x600">800x600</option>
+        <option value="640x480">640x480</option>
+      </select>
     </div>
+
+    <!-- 画布 -->
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+
+    <!-- 操作按钮 -->
+    <div class="canvas-options">
+      <button class="option-btn" onclick="setMode(optionStatus.ROTATE)">旋转</button>
+      <button class="option-btn" onclick="setMode(optionStatus.MOVE)">移动</button>
+      <button class="option-btn" onclick="setMode(optionStatus.DELETE)">删除选择项</button>
+      <button class="option-btn" onclick="setMode(optionStatus.CLEAR)">全部清空</button>
+    </div>
+
+    <!-- 保存和下载按钮 -->
+    <div class="action-buttons">
+      <button class="action-btn" onclick="saveImage()">保存</button>
+      <button class="action-btn" onclick="downloadImage()">下载</button>
+    </div>
+  </div>
+
   </div>
   <script src="{{ url_for('static', filename='js/draw.js') }}"></script>
   <script>
