@@ -444,12 +444,12 @@
         <option value="1024x768">1024x768</option>
         <option value="800x600">800x600</option>
         <option value="640x480">640x480</option>
+        <option value="1080x1920">1080x1920</option>
       </select>
     </div>
-
-    <!-- 画布 -->
-    <canvas id="myCanvas" width="500" height="500"></canvas>
-
+    <div id="canvasEditor">
+      <!-- 画布 -->
+    </div>
     <!-- 操作按钮 -->
     <div class="canvas-options">
       <button class="option-btn" onclick="setMode(optionStatus.ROTATE)">旋转</button>
@@ -462,11 +462,13 @@
     <div class="action-buttons">
       <button class="action-btn" onclick="saveImage()">保存</button>
       <button class="action-btn" onclick="downloadImage()">下载</button>
+      <button class="action-btn" onclick="createImage()">新建</button>
     </div>
   </div>
 
   </div>
-  <script src="{{ url_for('static', filename='js/draw.js') }}"></script>
+
+
   <script>
 
 
@@ -474,13 +476,13 @@
   </script>
   <div id="sidebar" class="sidebar">
     <h2 class="sidebar-title">历史记录</h2>
-    <ul class="image-list">
+    <ul class="image-list" id="Historical-preview">
       <li class="image-item" onclick="openOptionsPopup('2024-12-01', this)">
-        <img src="path/to/your/thumbnail1.jpg" alt="Thumbnail 1">
+        <img src="static\images\RGBA\cryoON.ico" alt="Thumbnail 1">
         <div class="creation-time">2024-12-01</div>
       </li>
       <li class="image-item" onclick="openOptionsPopup('2024-12-02', this)">
-        <img src="path/to/your/thumbnail2.jpg" alt="Thumbnail 2">
+        <img src="static\images\RGBA\cryoON.ico" alt="Thumbnail 2">
         <div class="creation-time">2024-12-02</div>
       </li>
       <!-- 更多内容项 -->
@@ -678,6 +680,8 @@
 
 
   </script>
+  <script src="{{ url_for('static', filename='js/src/imageElements.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/draw.js') }}"></script>
 </body>
 
 </html>

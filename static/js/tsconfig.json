@@ -7,7 +7,7 @@
       "rootDir": "./src",          // 输入文件夹
       "strict": true               // 启用严格类型检查
     },
-    "include": ["src/**/*.ts"],     // 包含的文件
+    "include": ["src/**/*.ts", "src/imageElements.js"],     // 包含的文件
     "exclude": ["node_modules"]     // 排除的文件
   }
   

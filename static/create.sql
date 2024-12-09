@@ -13,26 +13,37 @@ CREATE TABLE users (
     first_ip VARCHAR(45) NOT NULL                           -- 初次创建的IP地址
 );
 
--- 创建图像表 (表2)
 CREATE TABLE images (
-    id INT AUTO_INCREMENT PRIMARY KEY,        -- 图像ID，自增
-    width INT NOT NULL,                       -- 图像宽度
-    height INT NOT NULL,                      -- 图像高度
-    user_id INT NOT NULL,                     -- 用户ID，关联用户表
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,  -- 外键，关联到用户表
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- 图像创建时间，默认当前时间
+    id INT AUTO_INCREMENT PRIMARY KEY,              -- 图像ID，自增
+    username VARCHAR(255) NOT NULL,                  -- 用户名，关联用户表
+    canvas_id VARCHAR(255) NOT NULL,                 -- Canvas唯一标识符
+    width INT NOT NULL,                              -- 图像宽度
+    height INT NOT NULL,                             -- 图像高度
+    latest_edit_time TIMESTAMP,                      -- 最近一次编辑时间
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE  -- 外键，关联到用户表
 );
+
+
 
 -- 创建图像元素表 (表3)
 CREATE TABLE image_elements (
-    id INT AUTO_INCREMENT PRIMARY KEY,        -- 元素ID，自增
-    image_id INT NOT NULL,                    -- 图像ID，关联到图像表
-    file_name VARCHAR(255) NOT NULL,          -- 元素文件名
-    position_x INT NOT NULL,                  -- 元素位置x坐标
-    position_y INT NOT NULL,                  -- 元素位置y坐标
-    rotation FLOAT NOT NULL,                  -- 元素旋转角度（单位：度）
+    id INT AUTO_INCREMENT PRIMARY KEY,               -- 元素ID，自增
+    image_id INT NOT NULL,                            -- 图像ID，关联到图像表
+    file_name VARCHAR(255) NOT NULL,                  -- 元素文件名
+    position_x FLOAT NOT NULL,                          -- 元素位置x坐标
+    position_y FLOAT NOT NULL,                          -- 元素位置y坐标
+    rotation FLOAT NOT NULL,                          -- 元素旋转角度（单位：度）
     FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE  -- 外键，关联到图像表
 );
+
+CREATE TABLE ip_registration_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,                      -- 日志ID，自增
+    ip_address VARCHAR(45) NOT NULL,                        -- IP地址
+    registration_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 注册时间
+    FOREIGN KEY (ip_address) REFERENCES users(first_ip)
+);
+
+-- u p 13916578626 8dbc6bd9c5a4818d5f20f6e25cccb6a444666ec0665d9b70d1a706c15bc00b2e
 
 CREATE USER IF NOT EXISTS 'service_user'@'localhost' IDENTIFIED BY 'service_password';
 
