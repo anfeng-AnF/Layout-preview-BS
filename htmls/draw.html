@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh">
-  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/hydroON.ico') }}">
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='icons/hydroON.ico') }}">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -104,6 +105,23 @@
       padding: 10px 20px;
       color: white;
       cursor: pointer;
+    }
+
+    /* 侧边栏按钮 */
+    .toggle-sidebar-menu {
+
+      color: white;
+      font-size: 30px;
+      border: none;
+      padding: none;
+      cursor: pointer;
+      z-index: 1000;
+      border-radius: 5px;
+    }
+
+    .menu-item:hover~.sidebar {
+      left: 0;
+      /* 展开侧边栏 */
     }
 
     /* 下拉菜单样式，默认隐藏 */
@@ -389,6 +407,11 @@
 
 <body>
   <div class="navbar">
+    <div class="menu-item">
+      <div class="toggle-sidebar-menu" onclick="toggleSidebar()">
+        ☰
+      </div>
+    </div>
     {% for category, images in category_images.items() %}
     <div class="menu-item">
       {{ category }}
@@ -445,6 +468,215 @@
   </div>
   <script src="{{ url_for('static', filename='js/draw.js') }}"></script>
   <script>
+
+
+
+  </script>
+  <div id="sidebar" class="sidebar">
+    <h2 class="sidebar-title">历史记录</h2>
+    <ul class="image-list">
+      <li class="image-item" onclick="openOptionsPopup('2024-12-01', this)">
+        <img src="path/to/your/thumbnail1.jpg" alt="Thumbnail 1">
+        <div class="creation-time">2024-12-01</div>
+      </li>
+      <li class="image-item" onclick="openOptionsPopup('2024-12-02', this)">
+        <img src="path/to/your/thumbnail2.jpg" alt="Thumbnail 2">
+        <div class="creation-time">2024-12-02</div>
+      </li>
+      <!-- 更多内容项 -->
+    </ul>
+  </div>
+
+  <!-- 悬浮窗 -->
+  <div id="popup" class="popup" onclick="handlePopupClick(event)">
+    <div class="popup-content">
+      <p id="popup-message">操作项</p>
+      <button onclick="editItem()">编辑</button>
+      <button onclick="deleteItem()">删除</button>
+    </div>
+  </div>
+
+
+
+
+  <!-- 页面背景 -->
+  <div id="overlay" class="overlay"></div>
+  <style>
+    /* 侧边栏 */
+    .sidebar {
+      width: 30%;
+      height: 100%;
+      background-color: #f4f4f4;
+      padding: 20px;
+      position: fixed;
+      top: 0;
+      left: -30%;
+      /* 初始隐藏 */
+      border-right: 1px solid #ddd;
+      transition: left 0.3s ease-in-out;
+    }
+
+    /* 侧边栏标题 */
+    .sidebar-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    /* 图片和时间列表 */
+    .image-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .image-item {
+      display: flex;
+      flex-direction: column;
+      /* 垂直排列 */
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+    }
+
+    .image-item img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      margin-bottom: 5px;
+    }
+
+    .creation-time {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* 编辑/删除选项 */
+    .options {
+      display: none;
+      /* 默认隐藏 */
+      margin-top: 5px;
+    }
+
+    .options button {
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+
+    .options button:hover {
+      background-color: #ddd;
+    }
+
+    /* 悬浮窗背景 */
+    .popup {
+      display: none;
+      /* 默认隐藏 */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      /* 半透明背景 */
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    /* 悬浮窗内容 */
+    .popup-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 300px;
+    }
+
+    .popup-content p {
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .popup-content button {
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      padding: 10px 15px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .popup-content button:hover {
+      background-color: #ddd;
+    }
+  </style>
+  <script>
+    let sidebar = document.getElementById('sidebar');
+
+    // 点击按钮时控制侧边栏的展开/收起
+    function toggleSidebar() {
+      const isSidebarOpen = sidebar.style.left === '0px';
+      sidebar.style.left = isSidebarOpen ? '-40%' : '0'; // 切换展开/收起状态
+    }
+
+    // 点击页面外部收起侧边栏
+    document.addEventListener('click', function (event) {
+      const isClickInsideSidebar = sidebar.contains(event.target);
+      const isClickInsideButton = document.querySelector('.toggle-sidebar-menu').contains(event.target);
+
+      // 如果点击区域不在侧边栏和按钮内，则收起侧边栏
+      if (!isClickInsideSidebar && !isClickInsideButton) {
+        sidebar.style.left = '-40%';
+      }
+    });
+
+    let currentItem = null; // 用于保存当前操作的项
+
+    // 打开悬浮窗
+    function openOptionsPopup(time, element) {
+      currentItem = element; // 保存当前项
+      const popup = document.getElementById('popup');
+      const message = document.getElementById('popup-message');
+      message.textContent = `创建时间: ${time}`;
+      popup.style.display = 'flex'; // 显示悬浮窗
+    }
+
+    // 关闭悬浮窗
+    function closePopup() {
+      const popup = document.getElementById('popup');
+      popup.style.display = 'none'; // 隐藏悬浮窗
+    }
+
+    // 编辑项
+    function editItem() {
+      if (currentItem) {
+        const time = currentItem.querySelector('.creation-time').textContent;
+        alert(`编辑项，创建时间: ${time}`);
+      }
+    }
+
+    // 删除项
+    function deleteItem() {
+      if (currentItem) {
+        currentItem.remove(); // 删除当前项
+      }
+    }
+
+    // 点击悬浮窗以外区域关闭
+    function handlePopupClick(event) {
+      const popupContent = document.querySelector('.popup-content');
+      if (!popupContent.contains(event.target)) {
+        closePopup(); // 如果点击的是弹窗外部，则关闭
+      }
+    }
+
+
   </script>
 </body>
 
